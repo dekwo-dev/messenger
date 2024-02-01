@@ -1,8 +1,0 @@
-syntax = "proto3";
-package guestbook;
-
-option go_package = "example.com/guestbook";
-
-message Comment {
-    
-}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -12,8 +13,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const debug = true
 var db *sql.DB
-
+var connection net.Conn
 
 func checkError(err error) {
     if err != nil {
@@ -85,6 +87,14 @@ func getCommentById(w http.ResponseWriter, r *http.Request) {
     } 
 }
 
+func ping(w http.ResponseWriter, r *http.Request) {
+    onDBChange()
+}
+
+// testing purpose
+func onDBChange() {
+}
+
 func getNextCommentsId() int {
     statement := `SELECT MAX(commentsId) as nextCommentsId FROM comments`
     
@@ -104,15 +114,38 @@ func getNextCommentsId() int {
 }
 
 func main() {
+    var ipBuilder strings.Builder
+    var buffer []byte
+    ipBuilder.WriteByte(':')
+
     var err error
+    port := "8080"
+
     db, err = sql.Open("sqlite3", "guestbook.db")
     checkError(err)
-
     defer db.Close()
+    
+    if !debug{
+        ipBuilder.Reset()
+        var response *http.Response
+        response, err = http.Get("https://api.ipify.org?format=text") 
+        checkError(err)
+
+        defer response.Body.Close()
+        buffer, err = io.ReadAll(response.Body)
+        checkError(err)
+        
+        ipBuilder.Write(buffer)
+        ipBuilder.WriteByte(':')
+    }
+
+    ip := ipBuilder.String()
+    ipBuilder.Reset()
 
     http.HandleFunc("/comments/post", postCommentHandler)
     http.HandleFunc("/comments/get-all", getAllCommentHandler)
     http.HandleFunc("/comments/get-comment", getCommentById)
-    fmt.Println("Launching http server")
-    log.Fatal(http.ListenAndServe(":8080", nil))
+    http.HandleFunc("/comments/ping", ping) 
+    log.Println("HTTP Server is servering at " + ip + port)
+    log.Fatal(http.ListenAndServe(ip + port, nil))
 }
