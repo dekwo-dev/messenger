@@ -4,24 +4,22 @@ import (
 	"fmt"
 	"log"
 	"net"
-)
 
-func checkErr(err error) {
-    if err != nil {
-        log.Fatal(err)
-    }
-}
+	"example.com/event-emitter/config"
+	"example.com/event-emitter/utils"
+)
 
 func main() {
     log.Println("Socket Server Running...")
-    server, err := net.Listen("tcp", "localhost:8000")
-    checkErr(err)
+    ip := utils.GetSelfPublicIP()
+    server, err := net.Listen("tcp", ip + config.Port)
+    utils.CheckError(err)
     defer server.Close()
     
-    log.Println("Listening on localhost:8000\nWaiting for subscriber...")
+    log.Println("Listening on " + ip + config.Port + " \nWaiting for subscriber...")
     for {
         connection, err := server.Accept()
-        checkErr(err)
+        utils.CheckError(err)
         go func() {
             fmt.Print(connection.LocalAddr())
             fmt.Println(connection.RemoteAddr())

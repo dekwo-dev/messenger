@@ -10,37 +10,32 @@ import (
 	"strings"
 	"time"
 
+	"example.com/guestbook/config"
+	"example.com/guestbook/utils"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const debug = true
 var db *sql.DB
 var connection net.Conn
-
-func checkError(err error) {
-    if err != nil {
-        log.Fatal(err)
-    }
-}
 
 func postCommentHandler(w http.ResponseWriter, r *http.Request) {
     // dummy, comments
     nextCommentsId:= getNextCommentsId()
 
     transaction, err := db.Begin()
-    checkError(err)
+    utils.CheckError(err)
 
     statement, err := transaction.Prepare(`INSERT INTO comments(commentsId, 
     commentsAuthor, commentsContent, commentsTime) values(?, ?, ?, ?)`)
-    checkError(err)
+    utils.CheckError(err)
     defer statement.Close()
 
     _, err = statement.Exec(nextCommentsId + 1, "user_1", "This is a comment", 
     time.Now())
-    checkError(err) 
+    utils.CheckError(err)
 
     err = transaction.Commit()
-    checkError(err)
+    utils.CheckError(err)
 }
 
 func getAllCommentHandler(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +63,7 @@ func getCommentById(w http.ResponseWriter, r *http.Request) {
 
         rows, err := db.Query("SELECT * FROM comments WHERE commentsId = ?", 
         commentsId)
-        checkError(err)
+        utils.CheckError(err)
         defer rows.Close()
 
         for rows.Next() {
@@ -80,7 +75,7 @@ func getCommentById(w http.ResponseWriter, r *http.Request) {
             )
 
             err := rows.Scan(&id, &author, &content, &timestamp)
-            checkError(err)
+            utils.CheckError(err)
             fmt.Println(id, author, content, timestamp)
         }
 
@@ -88,24 +83,20 @@ func getCommentById(w http.ResponseWriter, r *http.Request) {
 }
 
 func ping(w http.ResponseWriter, r *http.Request) {
-    onDBChange()
 }
 
-// testing purpose
-func onDBChange() {
-}
 
 func getNextCommentsId() int {
     statement := `SELECT MAX(commentsId) as nextCommentsId FROM comments`
     
     rows, err := db.Query(statement)
-    checkError(err)
+    utils.CheckError(err)
     defer rows.Close()
 
     if rows.Next() {
         var id int
         err = rows.Scan(&id)
-        checkError(err)
+        utils.CheckError(err)
 
         return id
     }
@@ -113,39 +104,35 @@ func getNextCommentsId() int {
     return -1
 }
 
-func main() {
-    var ipBuilder strings.Builder
-    var buffer []byte
-    ipBuilder.WriteByte(':')
-
+func dialEventEmitter() {
     var err error
-    port := "8080"
+    
+    url := "localhost" + ":" + config.SocketPort
+
+    if config.EnableRemoteSocket {
+        url = config.RemoteIP + ":" + config.SocketPort
+    }
+    connection, err = net.Dial("tcp", url)
+    utils.CheckError(err)
+}
+
+func main() {
+    var err error
 
     db, err = sql.Open("sqlite3", "guestbook.db")
-    checkError(err)
+    utils.CheckError(err)
     defer db.Close()
     
-    if !debug{
-        ipBuilder.Reset()
-        var response *http.Response
-        response, err = http.Get("https://api.ipify.org?format=text") 
-        checkError(err)
+    ip := utils.GetSelfPublicIP()
+    
+    url := ip + config.HTTPPort
 
-        defer response.Body.Close()
-        buffer, err = io.ReadAll(response.Body)
-        checkError(err)
-        
-        ipBuilder.Write(buffer)
-        ipBuilder.WriteByte(':')
-    }
-
-    ip := ipBuilder.String()
-    ipBuilder.Reset()
+    dialEventEmitter()
 
     http.HandleFunc("/comments/post", postCommentHandler)
     http.HandleFunc("/comments/get-all", getAllCommentHandler)
     http.HandleFunc("/comments/get-comment", getCommentById)
     http.HandleFunc("/comments/ping", ping) 
-    log.Println("HTTP Server is servering at " + ip + port)
-    log.Fatal(http.ListenAndServe(ip + port, nil))
+    log.Println("HTTP Server is servering at " + url)
+    log.Fatal(http.ListenAndServe(url, nil))
 }
