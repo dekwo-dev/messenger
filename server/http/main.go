@@ -114,6 +114,8 @@ func dialEventEmitter() {
     }
     connection, err = net.Dial("tcp", url)
     utils.CheckError(err)
+
+    log.Println("Connected to event Emitter at " + url)
 }
 
 func main() {
@@ -128,6 +130,8 @@ func main() {
     url := ip + config.HTTPPort
 
     dialEventEmitter()
+
+    connection.Close()
 
     http.HandleFunc("/comments/post", postCommentHandler)
     http.HandleFunc("/comments/get-all", getAllCommentHandler)

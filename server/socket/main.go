@@ -16,12 +16,12 @@ func main() {
     utils.CheckError(err)
     defer server.Close()
     
-    log.Println("Listening on " + ip + config.Port + " \nWaiting for subscriber...")
+    log.Println("Listening on " + ip + config.Port + 
+    " \nWaiting for subscriber...")
     for {
         connection, err := server.Accept()
         utils.CheckError(err)
         go func() {
-            fmt.Print(connection.LocalAddr())
             fmt.Println(connection.RemoteAddr())
             connection.Close()
         }()
