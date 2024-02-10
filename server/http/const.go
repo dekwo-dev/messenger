@@ -9,5 +9,7 @@ const port string = "8000"
 
 const NewComment = "on-new-comment"
 const DelComment = "on-del-comment"
+const NewSub = "on-new-sub"
+const SubDisconnect = "on-sub-disconnect"
 
 const writeWait = 10 * time.Second

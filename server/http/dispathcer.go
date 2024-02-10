@@ -27,11 +27,17 @@ func (d *Dispatcher) run() {
             d.subs[sub] = struct{}{}
             log.Printf("%v (INFO): Dispatcher added subscriber from %v\n", 
                 f, sub.addr)
+            for sub := range d.subs {
+                sub.event <- []byte(NewSub) 
+            }
         case sub := <- d.unsub:
             if _, ok := d.subs[sub]; ok {
                 delete(d.subs, sub)
                 log.Printf("%v (INFO): Dispatcher removed subscriber from %v\n", 
                     f, sub.addr)
+                for sub := range d.subs {
+                    sub.event <- []byte(SubDisconnect)
+                }
             }
         case event := <-d.event:
             log.Printf("%v (INFO): Dispatcher received event - %v from DB\n", 
