@@ -7,7 +7,7 @@ import (
 )
 
 type Serializeable interface {
-    serialize() ([]btye, Error)
+    serialize() ([]byte, error)
 }
 
 type SubConnEvent struct {
