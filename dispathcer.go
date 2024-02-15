@@ -51,7 +51,6 @@ func (d *Dispatcher) run() {
                     f, sub.addr)
                 log.Printf("%v (INFO): Number of subscribers = %v\n", f, len(d.subs));
 
-
                 e := &SubConnEvent{
                     SubDisconnect,
                     uint8(len(d.subs)),

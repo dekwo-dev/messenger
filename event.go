@@ -11,15 +11,15 @@ type Serializeable interface {
 }
 
 type SubConnEvent struct {
-    event string
-    viewCount uint8
+    Event string
+    ViewCount uint8
 }
 
 type DBChangeEvent struct {
-    event string
+    Event string
 }
 
-func (e *SubConnEvent) serialize() ([]byte, error) {
+func (e SubConnEvent) serialize() ([]byte, error) {
     const f = "SubConnEvent.serialize"
     b, err := json.Marshal(e)
     if err != nil {
@@ -32,7 +32,7 @@ func (e *SubConnEvent) serialize() ([]byte, error) {
     return b, nil;
 }
 
-func (e *DBChangeEvent) serializer() ([]byte, error) {
+func (e DBChangeEvent) serializer() ([]byte, error) {
     const f = "DBChangeEvent.serialize"
 
     b, err := json.Marshal(e)
