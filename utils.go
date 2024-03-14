@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+type E struct {
+
+}
+
 var GetEnv = env()
 
 func checkError(err error) {
@@ -91,18 +95,21 @@ func getSelfPublicIP() string {
 }
 
 func fatal(l int, file string, f string, m string, e error) {
-    log.Fatalf(
-        "{level: %d, file: %s, function: %s, msg: %s, error: %s}",
-        l, file, f, m, e.Error(),
-    )
+    if e != nil {
+        log.Fatalf(
+            "{level: %d, file: %s, function: %s, msg: %s, error: %s}\n",
+            l, file, f, m, e.Error(),
+        )
+    }
+    log.Fatalf("{level: %d, file: %s, function: %s, msg: %s}\n", l, file, f, m)
 }
 
 func info(l int, file string, f string, m string, e error) {
     if e != nil {
         log.Printf(
-            "{level: %d, file: %s, function: %s, msg: %s, error: %s}",
+            "{level: %d, file: %s, function: %s, msg: %s, error: %s}\n",
             l, file, f, m, e.Error(),
         )
     }
-    log.Printf("{level: %d, file: %s, function: %s, msg: %s}", l, file, f, m)
+    log.Printf("{level: %d, file: %s, function: %s, msg: %s}\n", l, file, f, m)
 }
