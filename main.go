@@ -7,7 +7,7 @@ import (
 
 func main() {
     n := notifier()
-	d := dispatcher()
+	d := dispatcher(n)
 
 	ip := getSelfPublicIP()
 	url := ip + ":" + port

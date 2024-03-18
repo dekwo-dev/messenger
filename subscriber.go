@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"dekwo.dev/messager/pb"
 	"github.com/gorilla/websocket"
 )
 
@@ -28,7 +29,7 @@ var upgrader = websocket.Upgrader{
 type Subscriber struct {
 	conn  *websocket.Conn
 	addr  string
-	event chan Event      // a subscriber <-> dispatcher
+	event chan *pb.Event      // a subscriber <-> dispatcher
 	unsub chan *Subscriber // a subscriber <-> dispatcher
 }
 
@@ -54,19 +55,14 @@ func (sub *Subscriber) read() {
 				websocket.CloseGoingAway,
 				websocket.CloseAbnormalClosure,
 			) {
-                info(50, file, f, fmt.Sprintf(
-                    "Failed to close connection from %s", sub.addr),
-                    err,
-                )
+                info(50, file, f, fmt.Sprintf("Failed to close connection from %s",
+                    sub.addr), err)
 			}
 			break
 		}
 	}
 
-	info(50, file, f, 
-        fmt.Sprintf("Connection from %s closed", sub.addr),
-        nil,
-    )
+	info(50, file, f, fmt.Sprintf("Connection from %s closed", sub.addr), nil)
 }
 
 func (sub *Subscriber) notify() {
@@ -75,10 +71,8 @@ func (sub *Subscriber) notify() {
 
     defer sub.close()
 
-	info(50, file, f, 
-        fmt.Sprintf("Subscriber from %s is listening for next event", sub.addr), 
-        nil,
-    )
+	info(50, file, f, fmt.Sprintf("Subscriber from %s is listening for next event",
+        sub.addr), nil)
 
     attempt := 5
 
@@ -87,41 +81,23 @@ func (sub *Subscriber) notify() {
 		case event := <-sub.event:
 			sub.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-            info(30, file, f, 
-                fmt.Sprintf(
-                    "Subscriber from %s receive event with type %s",
-                    sub.addr, event.getType(),
-                ),
-                nil,
-            )
+            info(30, file, f, fmt.Sprintf("Subscriber from %s receive event with type %s",
+                    sub.addr, event.getType()), nil)
 
-            b, err := event.serialize()
             if err != nil {
-                info(50, file, f, 
-                    fmt.Sprintf(
-                        "Failed to serialize fro Subscriber from %s",
-                        sub.addr,
-                    ),
-                    nil,
-                )
+                info(50, file, f, fmt.Sprintf("Failed to serialize fro Subscriber from %s",
+                        sub.addr), nil)
             }
 
 			err = sub.conn.WriteMessage(websocket.TextMessage, b)
 			if err != nil {
-                info(50, file, f, 
-                    fmt.Sprintf("Failed to write payload to Subscriber from %s. Remaining failed write attempt: %d",
-                        sub.addr, attempt - 1),
-                    err,
-                )
+                info(50, file, f, fmt.Sprintf("Failed to write payload to Subscriber from %s. Remaining failed write attempt: %d",
+                        sub.addr, attempt - 1), err)
                 attempt--
                 if attempt <= 0 {
-                    info(50, file, f, 
-                        fmt.Sprintf("Failed write attempt limit reaches for Subscriber from %s. Forcefully close connection", 
-                            sub.addr,
-                        ),
-                        nil,
-                    )
-                    break
+                    info(50, file, f, fmt.Sprintf("Failed write attempt limit reaches for Subscriber from %s. Forcefully close connection", 
+                            sub.addr), nil)
+                    return
                 }
 			}
 		}
@@ -141,7 +117,7 @@ func ws(d *Dispatcher, w http.ResponseWriter, r *http.Request) {
 	sub := &Subscriber{
 		conn:  conn,
 		addr:  conn.RemoteAddr().String(),
-		event: make(chan Event),
+		event: make(chan *pb.Event),
 		unsub: d.unsub,
 	}
 

@@ -2,21 +2,23 @@ package main
 
 import (
 	"fmt"
+
+	"dekwo.dev/messager/pb"
 )
 
 type Dispatcher struct {
 	subs    map[*Subscriber]E
-    workers map[*Worker]E
     done    chan *Worker
+    enqueue chan int
 	sub     chan *Subscriber // HTTP server   -> dispatcher
 	unsub   chan *Subscriber // a subscriber <-> dispatcher
 }
 
-func dispatcher() *Dispatcher {
+func dispatcher(n *Notifier) *Dispatcher {
 	return &Dispatcher{
 		subs:    make(map[*Subscriber]E),
-        workers: make(map[*Worker]E),
         done:    make(chan *Worker), 
+        enqueue: n.enqueue,
 		sub:     make(chan *Subscriber),
 		unsub:   make(chan *Subscriber),
 	}
@@ -33,18 +35,21 @@ func (d *Dispatcher) run() {
 
             info(30, f, file, fmt.Sprintf(
                 "Dispatcher added subscriber from %s. Number of subscribers: %d",
-                sub.addr,
-                len(d.subs),
-            ), nil)
+                sub.addr, len(d.subs)), nil)
 
-			e := &ViewCountEvent{
-                "ViewCountEvent",
-				NewSub,
-				uint8(len(d.subs)),
-			}
+
+            event := &pb.ViewCountEvent {
+                ViewCountEventType: pb.ViewCountEventType_VIEWCOUNTEVENTTYPE_INCREASE,
+                ViewCount: uint32(len(d.subs)),
+            }
+
+            wrapper := &pb.Event {
+                EventOneof: &pb.Event_ViewCountEvent { ViewCountEvent: event }, 
+            }
+
 
 			for sub := range d.subs {
-				sub.event <- e
+				sub.event <- wrapper
 			}
 		case sub := <-d.unsub:
 			if _, ok := d.subs[sub]; ok {
@@ -52,20 +57,44 @@ func (d *Dispatcher) run() {
 
                 info(30, f, file, fmt.Sprintf(
                     "Dispatcher removed subscriber from %s. Number of subscribers: %d",
-                    sub.addr,
-                    len(d.subs),
-                ), nil)
+                    sub.addr, len(d.subs)), nil)
 
-				e := &ViewCountEvent{
-                    "ViewCountEvent",
-					DelSub,
-					uint8(len(d.subs)),
-				}
+                event := &pb.ViewCountEvent {
+                    ViewCountEventType: pb.ViewCountEventType_VIEWCOUNTEVENTTYPE_DECREASE,
+                    ViewCount: uint32(len(d.subs)),
+                }
+
+                wrapper := &pb.Event {
+                    EventOneof: &pb.Event_ViewCountEvent { 
+                        ViewCountEvent: event,
+                    },
+                }
 
 				for sub := range d.subs {
-					sub.event <- e
+					sub.event <- wrapper 
 				}
+
+                sub = nil
 			}
+        case load := <-d.enqueue:
+            // TODO: Performance test between multiple workers and single worker 
+            info(30, f, file, 
+                fmt.Sprintf("Notifier notify %d items in queue", load), nil)
+
+            w := worker(d)
+
+            go w.run(load)
+        case w := <- d.done:
+            // TODO: Performance test on forwarding result between dispatcher and workers
+            info(30, f, file,
+                fmt.Sprintf("Received worker payload with a load of %d", 
+                    len(w.payload)), nil)
+
+            for _, event := range w.payload {
+                info(30, f, file, fmt.Sprintf("Event: %v", event.String()), nil)
+            }
+
+            w = nil
 		}
 	}
 }

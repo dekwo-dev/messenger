@@ -76,7 +76,7 @@ func getSelfPublicIP() string {
 		err    error
 	)
 
-	if !debug {
+	if !debug() {
 		builder.Reset()
 		var r *http.Response
 		r, err = http.Get(ipify)
