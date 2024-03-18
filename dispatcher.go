@@ -47,7 +47,6 @@ func (d *Dispatcher) run() {
                 EventOneof: &pb.Event_ViewCountEvent { ViewCountEvent: event }, 
             }
 
-
 			for sub := range d.subs {
 				sub.event <- wrapper
 			}

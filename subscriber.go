@@ -8,6 +8,7 @@ import (
 
 	"dekwo.dev/messager/pb"
 	"github.com/gorilla/websocket"
+	"google.golang.org/protobuf/proto"
 )
 
 var upgrader = websocket.Upgrader{
@@ -81,13 +82,18 @@ func (sub *Subscriber) notify() {
 		case event := <-sub.event:
 			sub.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-            info(30, file, f, fmt.Sprintf("Subscriber from %s receive event: %s",
-                    sub.addr, event.String()), nil)
+            es := event.String()
 
-            if err := sub.conn.WriteMessage(
-                websocket.TextMessage, 
-                []byte(event.String()),
-            ); err != nil {
+            info(30, file, f, fmt.Sprintf("Subscriber from %s receive event: %s",
+                    sub.addr, es), nil)
+
+            b, err := proto.Marshal(event)
+            if err != nil {
+                info(50, file, f, fmt.Sprintf("Subscriber from %s failed to serialize event %s",
+                    sub.addr, es), err)
+            }
+
+            if err = sub.conn.WriteMessage(websocket.TextMessage, b); err != nil {
                 info(50, file, f, fmt.Sprintf("Failed to write payload to Subscriber from %s. Remaining failed write attempt: %d",
                         sub.addr, attempt - 1), err)
                 attempt--
