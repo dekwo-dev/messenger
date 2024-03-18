@@ -81,16 +81,13 @@ func (sub *Subscriber) notify() {
 		case event := <-sub.event:
 			sub.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-            info(30, file, f, fmt.Sprintf("Subscriber from %s receive event with type %s",
-                    sub.addr, event.getType()), nil)
+            info(30, file, f, fmt.Sprintf("Subscriber from %s receive event: %s",
+                    sub.addr, event.String()), nil)
 
-            if err != nil {
-                info(50, file, f, fmt.Sprintf("Failed to serialize fro Subscriber from %s",
-                        sub.addr), nil)
-            }
-
-			err = sub.conn.WriteMessage(websocket.TextMessage, b)
-			if err != nil {
+            if err := sub.conn.WriteMessage(
+                websocket.TextMessage, 
+                []byte(event.String()),
+            ); err != nil {
                 info(50, file, f, fmt.Sprintf("Failed to write payload to Subscriber from %s. Remaining failed write attempt: %d",
                         sub.addr, attempt - 1), err)
                 attempt--
