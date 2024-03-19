@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 )
@@ -19,6 +19,26 @@ func checkError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func fatal(l int, file string, f string, m string, e error) {
+    if e != nil {
+        log.Fatalf(
+            "{level: %d, file: %s, function: %s, msg: %s, error: %s}\n",
+            l, file, f, m, e.Error(),
+        )
+    }
+    log.Fatalf("{level: %d, file: %s, function: %s, msg: %s}\n", l, file, f, m)
+}
+
+func info(l int, file string, f string, m string, e error) {
+    if e != nil {
+        log.Printf(
+            "{level: %d, file: %s, function: %s, msg: %s, error: %s}\n",
+            l, file, f, m, e.Error(),
+        )
+    }
+    log.Printf("{level: %d, file: %s, function: %s, msg: %s}\n", l, file, f, m)
 }
 
 func env() func(k string) string {
@@ -46,6 +66,8 @@ func env() func(k string) string {
             )
         }
 
+        defer fd.Close()
+
         r := bufio.NewReader(fd)
         for {
             if l, e := r.ReadString('\n'); e == io.EOF {
@@ -54,6 +76,12 @@ func env() func(k string) string {
                 fatal(50, file, f, "Error when reading string in .env", e)
             } else {
                 sp := strings.SplitN(strings.TrimSpace(l), "=", 2)
+                
+                if len(sp) != 2 {
+                    fatal(50, file, f, fmt.Sprintf("Error when parsing an entry of .env variable. Problem lines: %s",
+                        l), nil)
+                }
+
                 env[sp[0]] = sp[1]
             }
         }
@@ -64,52 +92,4 @@ func env() func(k string) string {
             return ""
         }
     }
-}
-
-func getSelfPublicIP() string {
-	var builder strings.Builder
-
-	builder.Reset()
-
-	var (
-		buffer []byte
-		err    error
-	)
-
-	if !debug() {
-		builder.Reset()
-		var r *http.Response
-		r, err = http.Get(ipify)
-		checkError(err)
-
-		defer r.Body.Close()
-		buffer, err = io.ReadAll(r.Body)
-		checkError(err)
-
-		builder.Write(buffer)
-	}
-
-	ip := builder.String()
-
-	return ip
-}
-
-func fatal(l int, file string, f string, m string, e error) {
-    if e != nil {
-        log.Fatalf(
-            "{level: %d, file: %s, function: %s, msg: %s, error: %s}\n",
-            l, file, f, m, e.Error(),
-        )
-    }
-    log.Fatalf("{level: %d, file: %s, function: %s, msg: %s}\n", l, file, f, m)
-}
-
-func info(l int, file string, f string, m string, e error) {
-    if e != nil {
-        log.Printf(
-            "{level: %d, file: %s, function: %s, msg: %s, error: %s}\n",
-            l, file, f, m, e.Error(),
-        )
-    }
-    log.Printf("{level: %d, file: %s, function: %s, msg: %s}\n", l, file, f, m)
 }
