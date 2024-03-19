@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package messager;
+
+//import "google/protobuf/descriptor.proto";
+
+option go_package = "pb/";
+
+/*extend google.protobuf.EnumValueOptions {
+    optional string event_name = 3;
+}*/
+
+enum ViewCountEventType {
+    VIEWCOUNTEVENTTYPE_UNSPECIFIED = 0;
+    VIEWCOUNTEVENTTYPE_INCREASE = 1; //[(event_name) = "INCREASE"]
+    VIEWCOUNTEVENTTYPE_DECREASE = 2; //[(event_name) = "DECREASE"]
+}
+
+enum DBEventType {
+    DBEVENTTYPE_UNSPECIFIED = 0;
+    DBEVENTTYPE_DELETE = 1; //[(event_name) = "DELETE"]
+    DBEVENTTYPE_INSERT = 2; //[(event_name) = "INSERT"]
+    DBEVENTTYPE_UPDATE = 3; //[(event_name) = "UPDATE"]
+}
+
+message Comment {
+    uint32 id = 1;
+    string author = 2;
+    string content = 3;
+    int64 time = 4;
+}
+
+message DBChangeEvent {
+    DBEventType db_event_type = 1;
+    Comment comment = 2;
+}
+
+message ViewCountEvent {
+    ViewCountEventType view_count_event_type = 1;
+    uint32 view_count = 2;
+}
+
+message Event {
+    oneof event_oneof {
+        DBChangeEvent db_change_event = 1;
+        ViewCountEvent view_count_event = 2;
+    }
+}
