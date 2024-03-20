@@ -5,16 +5,18 @@ import (
 	"log"
 	"net/http"
 
-    "dekwo.dev/messager/env"
-    "dekwo.dev/messager/logger"
-    "dekwo.dev/messager/worker"
+	"dekwo.dev/messager/env"
+	"dekwo.dev/messager/logger"
+	"dekwo.dev/messager/worker"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 func Setup(d *worker.Dispatcher) {
-	http.HandleFunc("/ws", func(w http.ResponseWriter,
-		r *http.Request) {
-		ws(d, w, r)
-	})
+    http.Handle("/ws", rateLimited(2, 4,
+        func (w http.ResponseWriter, r *http.Request) {
+            ws(d, w, r)
+        },
+    ))
 }
 
 func Run() {
@@ -24,4 +26,25 @@ func Run() {
     logger.Info(20, file, f, fmt.Sprintf("Serving at port %d", env.Port()), nil)
 
     log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", env.Port()), nil))
+}
+
+func RunTLS() {
+    const f = "RunTLS"
+    const file = "route/setup.go"
+
+    m := &autocert.Manager {
+        Cache: autocert.DirCache(".autocert"),
+        Prompt: autocert.AcceptTOS,
+        Email: "dekr0.dk@protonmail.com",
+        HostPolicy: autocert.HostWhitelist("localhost"),
+    }
+
+    s := &http.Server {
+        Addr: ":https", // Port 443
+        TLSConfig: m.TLSConfig(),
+    }
+
+    logger.Info(20, file, f, "Serving at port HTTPS", nil)
+
+    log.Fatal(s.ListenAndServeTLS("", ""))
 }

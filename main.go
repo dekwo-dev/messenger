@@ -13,5 +13,5 @@ func main() {
 	go d.Run()
 
     route.Setup(d)
-    route.Run()
+    route.RunTLS()
 }
