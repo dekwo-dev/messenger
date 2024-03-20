@@ -1,5 +1,5 @@
 proto:
-	protoc --go_out=./ --proto_path=./ messager.proto 
+	protoc --go_out=./ --proto_path=./ ./def/messager.proto ./def/log.proto
 tuild:
 	docker build -t guestbook-backend .
 dev:

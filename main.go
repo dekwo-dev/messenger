@@ -1,24 +1,17 @@
 package main
 
 import (
-	"log"
-	"net/http"
+    "dekwo.dev/messager/route"
+    . "dekwo.dev/messager/worker"
 )
 
 func main() {
-    n := notifier()
-	d := dispatcher(n)
+    n := NewNotifier()
+	d := NewDispatcher(n)
 
-	ip := getSelfPublicIP()
-	url := ip + ":" + port
+    go n.Run()
+	go d.Run()
 
-	go d.run()
-    go n.run()
-
-	http.HandleFunc("/ws", func(w http.ResponseWriter,
-		r *http.Request) {
-		ws(d, w, r)
-	})
-
-	log.Fatal(http.ListenAndServe(url, nil))
+    route.Setup(d)
+    route.Run()
 }
