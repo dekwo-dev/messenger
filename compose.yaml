@@ -1,6 +1,6 @@
 services:
   app:
-    image: guestbook-backend:latest
+    image: dekwo.dev/messenger:latest
     ports:
       - 8000:443
     working_dir: /app
