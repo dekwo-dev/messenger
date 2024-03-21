@@ -49,7 +49,7 @@ func RunTLS() {
         TLSConfig: m.TLSConfig(),
     }
 
-    logger.Info(20, file, f, "Serving at port HTTPS", nil)
+    logger.Info(20, file, f, fmt.Sprintf("Serving at port HTTPS over domain %s", domain), nil)
 
     log.Fatal(s.ListenAndServeTLS("", ""))
 }
