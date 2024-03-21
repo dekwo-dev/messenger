@@ -6,5 +6,7 @@ up:
 	docker compose up
 down:
 	docker compose down
+clean:
+	docker image prune -a
 fmt:
 	golines -w *.go

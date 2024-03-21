@@ -32,11 +32,16 @@ func RunTLS() {
     const f = "RunTLS"
     const file = "route/setup.go"
 
+    domain := "localhost"
+    if env.Prod() {
+        domain = "dekwo.dev"
+    }
+
     m := &autocert.Manager {
         Cache: autocert.DirCache(".autocert"),
         Prompt: autocert.AcceptTOS,
         Email: "dekr0.dk@protonmail.com",
-        HostPolicy: autocert.HostWhitelist("localhost"),
+        HostPolicy: autocert.HostWhitelist(domain),
     }
 
     s := &http.Server {
