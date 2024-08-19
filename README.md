@@ -4,5 +4,5 @@
 - Stack & Libraries
     - Golang
     - Protobuf
-    - Sqlite3
+    - PostgreSQL
 - Delpoyed in Linode (Linode 2GB Shared CPU)
